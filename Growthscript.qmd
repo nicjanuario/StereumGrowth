@@ -1,0 +1,116 @@
+---
+title: "Growth Graphs Script Stereum"
+format: 
+  html:
+    embed-resources: true
+editor: visual
+---
+
+## Graphs for Conspecific Variation
+
+These graphs will consist of the average growth radius taken from three (if there were three) spore isolates from a single individual chosen to be representative of the species. These representatives were simply ones we had single spore isolates for.
+
+Average radial growth was calculated by measuring the radius at multiple points around the circumference of the growing mycelium at each time point. These measurements were averaged to obtain a single radial growth value for each isolate at each day of incubation. The mean growth values of the individual isolates were then averaged across all isolates within each specimen group to obtain a single mean radial growth value for each specimen at each time point.
+
+#### Load Data, Packages & Working Directory
+
+```{r}
+
+library(readr) # or library(tidyverse)
+
+setwd("~/Desktop/MSc Stereum Project /Growth Scripts")
+library(ggplot2)
+
+conspecific_data <- read.csv("Stereum Sampling Master Sheet  - Formatted Data Growth Species Averages.csv")
+
+# Clean species names in original data first
+conspecific_data$Species <- trimws(conspecific_data$Species)
+
+# To add 0 growth at day 0
+day_0 <- data.frame(
+  Species = c("Sanguinolentum", "Rugosum", "Hirsutum", "Hirsutum (SCT)", "Gausapatum"),
+  Average_Growth_Radius = 0,
+  Days_Since_Incubation = 0
+)
+
+# To collate data
+conspecific_data_combined <- rbind(
+  day_0,
+  conspecific_data
+)
+
+# Remove NA rows
+conspecific_data_clean <- subset(
+  conspecific_data_combined,
+  !is.na(Average_Growth_Radius)
+)
+
+# Verify
+unique(conspecific_data_clean$Species)
+
+
+
+```
+
+#### Create Interspecies Graph
+
+```{r}
+ggplot(
+  conspecific_data_clean,
+  aes(
+    x = Days_Since_Incubation,
+    y = Average_Growth_Radius,
+    group = Species,
+    color = Species
+  )
+) +
+  geom_line(na.rm = TRUE) +
+  geom_point(na.rm = TRUE) +
+  labs(
+    x = "Days Since Incubation",
+    y = "Average Growth Radius (cm)",
+    color = "Species"
+  ) +
+  theme_classic()
+```
+
+## Graphs for Single Spore Isolate Variation
+
+Average radial growth was calculated by measuring the radius at multiple points around the circumference of the growing mycelium at each time point. These measurements were averaged to obtain a single radial growth value for each isolate at each day of incubation. The mean growth values of the individual isolates were can be then be then compared across all isolates within each specimen group to illustrate rates different growth rates between siblings (progeny from same individual).
+
+```{r}
+isolate_data <- read_csv("Stereum Sampling Master Sheet  - Intraspecies Growth.csv")
+```
+
+#### Make Graph
+
+```{r}
+#Day 0 isolates 
+day_0_isolates <- expand.grid(
+  Specimen = c("hirsutum", "rugosum", "hirsutum_SCT", "gausapatum"),
+  Isolate = c("isolate_1", "isolate_2", "isolate_3")
+)
+day_0_isolates$Average_Growth_Radius <- 0
+day_0_isolates$Days_Since_Incubation <- 0
+
+# Combine with data
+isolate_combined <- rbind(day_0_isolates, isolate_data)
+
+# Clean specimen names just in case
+isolate_combined$Specimen <- trimws(isolate_combined$Specimen)
+
+# Plot
+ggplot(isolate_combined, aes(x = Days_Since_Incubation, 
+                             y = Average_Growth_Radius, 
+                             colour = Isolate,
+                             group = Isolate)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~ Specimen) +
+  labs(x = "Days Since Incubation",
+       y = "Average Growth Radius (cm)",
+       title = "Intraspecific Growth Rate Variation by Isolate") +
+  theme_bw()
+
+
+```
